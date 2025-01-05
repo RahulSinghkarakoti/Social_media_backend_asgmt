@@ -10,7 +10,7 @@ const router = Router();
 
 router.route("/search/:searchParams").get(searchUsers); // Search users
 router.route("/friends").get(authenticateJWT, getFriends); // Get friend list
-router.route("/:userId").get(getUsers); // Get user
-router.route("/friends/:friendId").delete(authenticateJWT, unfriend); // Unfriend
+router.route("/:userId").get(authenticateJWT,getUsers); // Get user
+router.route("/friends/:targetId").delete(authenticateJWT, unfriend); // Unfriend
 
 export default router;

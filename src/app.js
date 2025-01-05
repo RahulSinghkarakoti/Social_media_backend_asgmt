@@ -23,10 +23,6 @@ app.use(bodyParser.json());
 
 app.use(cookieParser());//use to perform CRUD operation on cookies_at user device
 app.use(express.text());
-app.use((req, res, next) => {
-    console.log('Raw body:', req.rawBody);
-    next();
-  });
 //routes declaration
 app.get('/api/v1',(req,res)=>{
     res.send('welcome to social media api')

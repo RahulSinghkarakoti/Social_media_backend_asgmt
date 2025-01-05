@@ -21,6 +21,7 @@ const sendFriendRequest = asyncHandler(async (req, res) => {
       userId2: userId,
     });
     if (friendExists) throw new ApiError(400, "Friend request already exists");
+
     const friendRequest = await FriendRequest.create({
       senderId: user._id,
       receiverId: userId,
@@ -98,6 +99,7 @@ const rejectFriendRequest = asyncHandler(async (req, res) => {
       }
     );
     if (!friendRequest) throw new ApiError(400, "Friend request not found");
+
 
     return res
       .status(200)

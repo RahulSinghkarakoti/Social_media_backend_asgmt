@@ -3,6 +3,7 @@ import User from "../models/user.model.js";
 import { ApiError } from "../utils/apiError.js";
 import Friend from "../models/friend.model.js";
 import {ApiResponse} from "../utils/apiResponse.js"
+import FriendRequest from "../models/friendrequest.model.js";
 
 const generateAccessAndRefreshToken = async (userId) => {
   try {
@@ -11,9 +12,10 @@ const generateAccessAndRefreshToken = async (userId) => {
     const refreshToken = user.generateRefreshToken();
     user.refreshToken = refreshToken;
     await user.save({ validateBeforeSave: false });
+
     return { accessToken, refreshToken };
   } catch (error) {
-    console.log(error);
+    // console.log(error);
     throw new ApiError(500, "Failed to generate access and refresh token");
   }
 };
@@ -26,7 +28,7 @@ const signup = asyncHandler(async (req, res) => {
   //genrate access and refresh token
   //return the new created user with the tokens
   const { username, email, password } = req.body; 
-  console.log(username,email,password)
+  // console.log(username,email,password)
 
   if (!username || !email || !password)
     return res.status(400).json({ message: "All fields are required" });
@@ -38,7 +40,7 @@ const signup = asyncHandler(async (req, res) => {
    if (existingUser)
      return res.status(400).json({ message: "User already exists" });
  
-   const user = await User.create({ username, email, password });
+   const user = await User.create({ username, email, password }) 
  
    if (!user) throw new ApiError(500, "Failed to create user");
  
@@ -76,15 +78,20 @@ const login = asyncHandler(async (req, res) => {
   //compare password
   //return logged user data except password and refreshtoken
   const { username, password } = req.body;
-  console.log(username,password)
+  // console.log(username,password)
+
   if (!username || !password)
     return new ApiError(400, "All fields are required");
 
-  try {
+  
     const user = await User.findOne({ username });
-    if (!user) return new ApiError(400, "User not found");
+    // console.log(user)
+    if (!user) {
+      // console.log("user not found")
+      throw new ApiError(401, "User not found");
+     }
     const isPasswordCorrect = await user.comparePassword(password);
-    if (!isPasswordCorrect) return new ApiError(400, "Invalid password");
+    if (!isPasswordCorrect) throw new ApiError(401, "Invalid password");
   
     const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
       user._id
@@ -93,7 +100,7 @@ const login = asyncHandler(async (req, res) => {
     const loggedInUser = await User.findById(user._id).select(
       "-password -refreshToken"
     );
-    console.log("clear 4")
+     
   
     return res
       .status(200)
@@ -110,10 +117,8 @@ const login = asyncHandler(async (req, res) => {
       .json(
         new ApiResponse(200, "Login successful", {loggedInUser,accessToken} )
       );
-  } catch (error) {
-  throw new ApiError(500, error.message || "Internal server error || Login route",error)
-    
-  }
+
+  
 });
 
 const getProfile = asyncHandler(async (req, res) => {
@@ -127,16 +132,15 @@ const getProfile = asyncHandler(async (req, res) => {
   );
   if (!user) return new ApiError(404, "User not found");
 
-  const friends = await Friend.countDocuments({
-    $and: [
-      {
-        $or: [{ userId1: user._id }, { userId2: user._id }],
-      } 
-    ],
-  });
-  const friendRequestsSent = await Friend.countDocuments({
-    userId1: user._id, // User is the sender
-  });
+  const friends = await Friend.countDocuments( { userId1: user._id } );
+
+  // const friendRequestsSent = await Friend.countDocuments({
+  //   userId1: user._id, // User is the sender
+  // });
+  const friendRequestsSent=await FriendRequest.countDocuments({
+    senderId:req.user._id,
+    status:"pending"
+  })
 
   return res
   .status(200)
