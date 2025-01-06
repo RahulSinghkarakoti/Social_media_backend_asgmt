@@ -4,8 +4,10 @@ import { ApiError } from "../utils/apiError.js";
 import Friend from "../models/friend.model.js";
 import {ApiResponse} from "../utils/apiResponse.js"
 import FriendRequest from "../models/friendrequest.model.js";
+import jwt from "jsonwebtoken"
 
-const generateAccessAndRefreshToken = async (userId) => {
+const generateAccessAndRefreshToken = async (userId,req) => {
+  console.log(req.originalUrl || " nonoenoeno")
   try {
     const user = await User.findById(userId);
     const accessToken = user.generateAccessToken();
@@ -45,7 +47,8 @@ const signup = asyncHandler(async (req, res) => {
    if (!user) throw new ApiError(500, "Failed to create user");
  
    const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
-     user._id
+     user._id,
+     req
    );
  
    return res
@@ -81,20 +84,21 @@ const login = asyncHandler(async (req, res) => {
   // console.log(username,password)
 
   if (!username || !password)
-    return new ApiError(400, "All fields are required");
-
+    return res.status(400).json({ message: "All feilds are required" });
   
     const user = await User.findOne({ username });
     // console.log(user)
     if (!user) {
       // console.log("user not found")
-      throw new ApiError(401, "User not found");
+      return res.status(400).json({ message: "User not exists" });
      }
     const isPasswordCorrect = await user.comparePassword(password);
-    if (!isPasswordCorrect) throw new ApiError(401, "Invalid password");
+    if (!isPasswordCorrect)       return res.status(400).json({ message: "wrong Password" });
+
   
     const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
-      user._id
+      user._id,
+      req
     );
   
     const loggedInUser = await User.findById(user._id).select(
@@ -115,7 +119,7 @@ const login = asyncHandler(async (req, res) => {
         sameSite: "strict",
       })
       .json(
-        new ApiResponse(200, "Login successful", {loggedInUser,accessToken} )
+        new ApiResponse(200, "Login successful", {loggedInUser,accessToken,refreshToken} )
       );
 
   
@@ -148,30 +152,45 @@ const getProfile = asyncHandler(async (req, res) => {
 });
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
-  //console.log("in refersh token");
+  console.log("in refersh token");
   const incomingRefreshToken =
     req.cookies.refreshToken || req.body.refreshToken;
+    // console.log("icoming referesh token ---->",incomingRefreshToken)
   if (!incomingRefreshToken) {
-    throw new ApiError(401, "Unauthorized request");
+    return res.status(401).json({ message: "Unauthorized request" });
+
   }
   try {
     const decodedToken = jwt.verify(
       incomingRefreshToken,
       process.env.REFRESH_SECRET
     );
+  //  console.log("docodes token ---->",decodedToken)
     const user = await User.findById(decodedToken._id);
+    // console.log("userInfo ---->",user)
 
-    if (!user) throw new ApiError(401, "Invalid refresh token");
+    if (!user) {
+      // console.log("invalid user")
+      return res.status(401).json({ message: "Invalid refresh token" });
+}
+// console.log("check user done")
 
     if (incomingRefreshToken !== user.refreshToken) {
-      throw new ApiError(401, "Refresh token is expired or used");
+      return res.status(401).json({ message: "Refresh token is expired or used" });
+
     }
 
+    // console.log("check user2 done")
+
     const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
-      user._id
+      user._id,
+      req
     );
 
-
+    // console.log(
+    //   accessToken,
+    //   refreshToken
+    // )
     res
       .status(200)
       .cookie("accessToken", accessToken, { httpOnly: true, secure: true })
@@ -179,8 +198,8 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
       .json(
         new ApiResponse(
           200,
+          "Access token refreshed",
           { accessToken, refreshToken },
-          "Access token refreshed"
         )
       );
   } catch (error) {

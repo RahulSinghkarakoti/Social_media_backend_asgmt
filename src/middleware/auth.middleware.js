@@ -3,8 +3,9 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/apiError.js";
 import jwt from "jsonwebtoken"
 
-export const authenticateJWT = asyncHandler(async(req, _ , next) => {
+export const authenticateJWT = asyncHandler(async(req, res , next) => {
    console.log("in middleware")
+   console.log(`Middleware triggered on path: ${req.originalUrl}`);
    try {
      const token=req.cookies.accessToken || req.header("Authorization")?.replace("Bearer ", "");
      if(!token)   throw new ApiError(401,"unauthorized");
@@ -16,7 +17,7 @@ export const authenticateJWT = asyncHandler(async(req, _ , next) => {
     req.user=user;
     next();
    } catch (error) {
-      throw new ApiError(401,"Invalid accesstoken");
-
+      console.error("JWT Authentication Error:", error.message);
+      return res.status(401).json({ message: error.message });
    }
 })
