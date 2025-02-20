@@ -5,9 +5,10 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import { ApiError } from "../utils/apiError.js";
 import { MongoOIDCError } from "mongodb";
+import Image from "../models/image.model.js";
 
 const getUsers = asyncHandler(async (req, res) => {
-  //get the user info  like name, friends, email
+  //get the user info  like name, friends, email,images
   console.log("getUser funtion");
   //to do
   //get user info

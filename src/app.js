@@ -6,6 +6,7 @@ import authRouter from "./routes/auth.route.js"
 import userRouter from "./routes/user.route.js"
 import reccomendationRouter from "./routes/recommendation.route.js"
 import friendsRouter from "./routes/friends.route.js"
+import  imagesRouter from "./routes/image.route.js"
 const app=express()
 
 //use method is used to implement midelwears (cors,cookieparse)
@@ -31,6 +32,7 @@ app.use('/api/v1/auth',authRouter)
 app.use('/api/v1/users',userRouter) 
 app.use("/api/v1/reccomendation", reccomendationRouter)
 app.use("/api/v1/friends", friendsRouter)
+app.use("/api/v1/images", imagesRouter)
 
 
 export {app}
